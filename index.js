@@ -35,7 +35,7 @@ class Player {
         c.drawImage(this.image, this.position.x, this.position.y, this.width, this.height);
         c.restore();
     }
-
+ 
     update() {
         if (this.image) {
             this.draw();
@@ -65,6 +65,7 @@ class Projectile {
         this.position.y += this.velocity.y;
     }
 }
+
 
 class Invader {
     constructor({ position }) {
@@ -143,13 +144,27 @@ const keys = {
     space: { pressed: false }
 };
 
+
+
+
+
+let frames = 0;
+let randomInterval= Math.floor(Math.random() *500)+500
+console.log(randomInterval)
+
+
+
 function animate() {
     requestAnimationFrame(animate);
+
+    // Clear the canvas
     c.fillStyle = 'black';
     c.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Update player
     player.update();
 
+    // Update projectiles and remove off-screen projectiles
     projectiles.forEach((projectile, index) => {
         if (projectile.position.y + projectile.radius <= 0) {
             setTimeout(() => {
@@ -160,13 +175,46 @@ function animate() {
         }
     });
 
-    grids.forEach((grid) => {
+    // Update grids and invaders
+    grids.forEach((grid, gridIndex) => {
         grid.update();
-        grid.invaders.forEach((invader) => {
+
+        grid.invaders.forEach((invader, i) => {
             invader.update({ velocity: grid.velocity });
+
+            // Check for collision between projectiles and invaders
+            projectiles.forEach((projectile, j) => {
+                if (
+                    projectile.position.y - projectile.radius <= invader.position.y + invader.height &&
+                    projectile.position.x + projectile.radius >= invader.position.x &&
+                    projectile.position.x - projectile.radius <= invader.position.x + invader.width
+                ) {
+                    // Remove both invader and projectile safely
+                    setTimeout(() => {
+                        const invaderFound=grid.invaders.find((invader2)=>invader2 === invader)
+                        const projectileFound = projectiles.find((projectile2)=> projectile2 ===projectile)
+                        if (grid.invaders.includes(invader) && projectiles.includes(projectile)) {
+                            grid.invaders.splice(i, 1); // Remove invader
+                            projectiles.splice(j, 1);  // Remove projectile
+
+                            if(grid.invaders.length>0){
+                                const firstInvader = grid.invaders[0]
+                                const lastInvader= grid.invaders[grid.invaders.length-1]
+                                grid.width=lastInvader.position.x-firstInvader.position.x+ lastInvader.width
+                                grid.position.x=firstInvader.position.x
+
+                            }else{
+                                grid.splice(gridIndex,1)
+                            }
+
+                        }
+                    }, 0);
+                }
+            });
         });
     });
 
+    // Handle player movement
     if (keys.a.pressed && player.position.x >= 0) {
         player.velocity.x = -5;
         player.rotation = -0.15;
@@ -177,7 +225,21 @@ function animate() {
         player.velocity.x = 0;
         player.rotation = 0;
     }
+
+    // Log frames for debugging
+    console.log(frames);
+
+    // Spawn grids at random intervals
+    if (frames % randomInterval === 0) {
+        grids.push(new Grid());
+        randomInterval = Math.floor(Math.random() * 500) + 500; // Randomize interval
+        frames = 0;
+        console.log(randomInterval);
+    }
+
+    frames++; // Increment frames
 }
+
 
 animate();
 
