@@ -220,6 +220,7 @@ function animate() {
         }
     });
 
+
     // Update grids and invaders
     grids.forEach((grid, gridIndex) => {
         grid.update();
